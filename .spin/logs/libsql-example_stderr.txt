@@ -1,0 +1,6 @@
+Handler returned an error: access permission denied
+  caused by: Error code 3: Access permission denied
+Handler returned an error: access permission denied
+  caused by: Error code 3: Access permission denied
+Handler returned an error: no such table: Artist
+  caused by: Error code 1: SQL error or missing database
