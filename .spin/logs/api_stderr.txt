@@ -1,2 +1,24 @@
 Handler returned an error: failed to prepare statement: access permission denied
 Handler returned an error: failed to prepare statement: access permission denied
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database
+Handler returned an error: no such table: actor
+  caused by: Error code 1: SQL error or missing database

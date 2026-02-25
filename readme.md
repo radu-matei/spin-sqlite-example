@@ -1,9 +1,3 @@
-# Read-only SQLite database with Spin
+# Read-only SQLite databases bundled with Spin functions
 
-
-```
-$ spin build && spin up
-
-$ curl -X POST http://localhost:3000/query -d "SELECT * FROM Artists LIMIT 5"
-[{"ArtistId":1,"Name":"AC/DC"},{"ArtistId":2,"Name":"Accept"},{"ArtistId":3,"Name":"Aerosmith"},{"ArtistId":4,"Name":"Alanis Morissette"},{"ArtistId":5,"Name":"Alice In Chains"}]%
-```
+This is a proof of concept repository showing how to bundle a read-only SQLite database with a Spin function.

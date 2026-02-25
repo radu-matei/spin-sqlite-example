@@ -13,6 +13,6 @@ crate-type = ["cdylib"]
 anyhow = "1"
 serde_json = "1"
 spin-sdk = "5.2.0"
-rusqlite = { version = "0.28", default-features = false }
+rusqlite = { version = "0.28", default-features = false, features = ["backup"] }
 
 [workspace]

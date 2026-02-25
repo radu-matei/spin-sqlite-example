@@ -1,39 +1,62 @@
-use rusqlite::{types::Value, Connection, OpenFlags};
-use spin_sdk::http::{IntoResponse, Request, Response};
+use rusqlite::{backup::Backup, types::Value, Connection, OpenFlags};
+use spin_sdk::http::{Params, Request, Response, Router};
 use spin_sdk::http_component;
+use std::sync::OnceLock;
 
-const DB_URI: &str = "file:/chinook.db?immutable=1";
+struct Db(Connection);
+unsafe impl Send for Db {}
+unsafe impl Sync for Db {}
 
-fn open_db() -> anyhow::Result<Connection> {
-    let flags = OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI;
-    Ok(Connection::open_with_flags(DB_URI, flags)?)
+static DB: OnceLock<Db> = OnceLock::new();
+
+#[export_name = "wizer.initialize"]
+pub extern "C" fn init() {
+    let mut db_path = String::new();
+    std::io::stdin()
+        .read_line(&mut db_path)
+        .expect("failed to read db path from stdin");
+    let db_path = db_path.trim();
+    assert!(!db_path.is_empty(), "usage: echo <db-path> | wizer ...");
+
+    eprintln!("Loading {db_path} into memory");
+
+    let src = Connection::open_with_flags(db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .expect("failed to open database");
+    let mut dst = Connection::open_in_memory().expect("failed to open in-memory db");
+
+    let backup = Backup::new(&src, &mut dst).expect("failed to init backup");
+    backup.step(-1).expect("backup failed");
+    drop(backup);
+    drop(src);
+
+    DB.set(Db(dst)).ok().expect("DB already initialized");
 }
 
 #[http_component]
-fn handle(req: Request) -> anyhow::Result<impl IntoResponse> {
-    let path_info = req
-        .header("spin-path-info")
-        .map(|v| String::from_utf8_lossy(v.as_bytes()).into_owned())
-        .unwrap_or_else(|| "/".into());
-    let path = path_info.trim_end_matches('/');
-    let path = if path.is_empty() { "/" } else { path };
+fn handle(req: Request) -> Response {
+    let mut router = Router::suffix();
+    router.get("/tables", get_tables);
+    router.post("/query", post_query);
 
-    let sql = match path {
-        "/tables" => {
-            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name".to_string()
-        }
-        "/query" => {
-            let body = String::from_utf8_lossy(req.body()).trim().to_string();
-            if body.is_empty() {
-                return json_response(400, r#"{"error":"missing SQL in request body"}"#);
-            }
-            body
-        }
-        _ => return json_response(404, r#"{"error":"not found"}"#),
-    };
+    router.handle(req)
+}
 
-    let db = open_db()?;
-    let mut stmt = db.prepare(&sql)?;
+fn get_tables(_req: Request, _params: Params) -> anyhow::Result<Response> {
+    let sql = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name";
+    query(sql)
+}
+
+fn post_query(req: Request, _params: Params) -> anyhow::Result<Response> {
+    let sql = String::from_utf8_lossy(req.body()).trim().to_string();
+    if sql.is_empty() {
+        return json_response(400, r#"{"error":"missing SQL in request body"}"#);
+    }
+    query(&sql)
+}
+
+fn query(sql: &str) -> anyhow::Result<Response> {
+    let db = &DB.get().expect("DB not initialized").0;
+    let mut stmt = db.prepare(sql)?;
     let columns: Vec<String> = stmt.column_names().into_iter().map(String::from).collect();
     let rows: Vec<serde_json::Map<String, serde_json::Value>> = stmt
         .query_map([], |row| {
